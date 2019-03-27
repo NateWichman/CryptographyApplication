@@ -25,6 +25,8 @@ import javafx.event.ActionEvent;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.DecimalFormat;
+import java.math.BigInteger;
 
 public class Main extends Application{
     Stage window;
@@ -46,49 +48,182 @@ public class Main extends Application{
         leftMenu.setAlignment(Pos.CENTER);
         Button btnVig = new Button("  Vigenere Cipher  ");
         Button btnFreq = new Button("Frequency Anylizer");
-        Button btnAffine = new Button("      Affine Shift      ");
+        Button btnRSA = new Button("           RSA            ");
         leftMenu.setStyle("-fx-background-color: #68E1E6;");
-        leftMenu.getChildren().addAll(btnVig,btnAffine,btnFreq);
+        leftMenu.getChildren().addAll(btnVig,btnRSA,btnFreq);
 
+        //Vigenere button method
         btnVig.setOnAction(e -> {
-            System.out.println("RAN");
             runVigenere();
         });
 
+        //Frequency analyzer button
+        btnFreq.setOnAction(e -> {
+            runFequencyAnalyzer();
+        });
+
+        btnRSA.setOnAction(e -> {
+            runRSA();
+        });
+
+
+        //Initializing instance variable. This layout is the overall frame of the application's view
+        borderPane = new BorderPane();
+
+        //Adding left hand menu to the border pane.
+        borderPane.setLeft(leftMenu);
+
+        //Adding border pane layout to a scene
+        Scene scene = new Scene(borderPane, 1000, 500);
+
+        //adding that scene to the window
+        window.setScene(scene);
+
+        //displaying the window
+        window.show();
+    }
+
+    private void runRSA(){
+        BorderPane rsaPane = new BorderPane();
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10,10,10,10));
         gridPane.setVgap(8);
         gridPane.setHgap(10);
 
+        Label labelP = new Label("Large Prime Integer 'P': ");
+        GridPane.setConstraints(labelP,0,0);
+        TextField pInput = new TextField();
+        GridPane.setConstraints(pInput, 1,0);
 
-        Label nameLabel = new Label("Username");
-        GridPane.setConstraints(nameLabel,0,0);
+        Label labelQ = new Label("Large Prime Integer 'Q': ");
+        GridPane.setConstraints(labelQ,0,1);
+        TextField qInput = new TextField();
+        GridPane.setConstraints(qInput, 1,1);
 
-        TextField nameInput = new TextField("Username");
-        GridPane.setConstraints(nameInput, 1,0);
+        Label labelE = new Label("Encryption Exponent e guess (Self Correcting): ");
+        GridPane.setConstraints(labelE,0,2);
+        TextField eInput = new TextField();
+        GridPane.setConstraints(eInput, 1,2);
 
-        Label passLabel = new Label("Password");
-        GridPane.setConstraints(passLabel,0,1);
+        Label labelMessage = new Label("Message: ");
+        GridPane.setConstraints(labelMessage,0,3);
+        TextField messageInput = new TextField();
+        GridPane.setConstraints(messageInput, 1,3);
 
-        TextField passInput = new TextField("Password");
-        GridPane.setConstraints(passInput, 1,1);
+        //Button to initiate enciphering
+        Button btnEncrypt = new Button("Encrypt");
+        GridPane.setConstraints(btnEncrypt, 0, 4);
 
-        Button btnLogin = new Button("Log In");
-        GridPane.setConstraints(btnLogin, 1, 2);
+        //Button to initiate decrypting
+        Button btnAnalyze = new Button("Decrypt");
+        GridPane.setConstraints(btnAnalyze, 0, 5);
 
-        gridPane.getChildren().addAll(nameLabel, nameInput, passLabel, passInput, btnLogin);
+        gridPane.getChildren().addAll(labelP, pInput, labelE, eInput, labelQ, qInput, messageInput, labelMessage,
+                btnAnalyze,btnEncrypt);
 
+        //Text Area to display results of cipher
+        TextArea resultsTextArea = new TextArea();
+        resultsTextArea.setDisable(true);
 
+        /**********************************Logic Area************************************/
+        RSA rsaMachine = new RSA();
 
-        borderPane = new BorderPane();
-        borderPane.setLeft(leftMenu);
-        borderPane.setCenter(gridPane);
+        btnEncrypt.setOnAction(e -> {
+                BigInteger p = new BigInteger(pInput.getText().replace(" ", ""));
+                BigInteger q = new BigInteger(qInput.getText().replace(" ", ""));
+                BigInteger ex = new BigInteger(eInput.getText().replace(" ", ""));
 
-        Scene scene = new Scene(borderPane, 1000, 500);
-        window.setScene(scene);
-        window.show();
+                try {
+                    rsaMachine.setup(p, q, ex);
+                    BigInteger message = new BigInteger(messageInput.getText().replace(" ",""));
+                    BigInteger result = rsaMachine.encrypt(message);
+                    resultsTextArea.setText(result.toString());
+                } catch (Exception exe) {
+                    resultsTextArea.setText(exe.getMessage());
+                }
+        });
+
+        btnAnalyze.setOnAction(e -> {
+            try{
+                BigInteger message = new BigInteger(messageInput.getText().replace(" ",""));
+                BigInteger plaintext = rsaMachine.decyrpt(message);
+                resultsTextArea.setText(plaintext.toString());
+            }catch (Exception ex){
+                resultsTextArea.setText(ex.getMessage());
+            }
+        });
+
+        /**********************************Initialize Area************************************/
+        rsaPane.setCenter(resultsTextArea);
+        rsaPane.setLeft(gridPane);
+        borderPane.setCenter(rsaPane);
     }
 
+    public void handle(){
+
+    }
+
+    private void runFequencyAnalyzer(){
+        FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
+
+        BorderPane frequncyPane = new BorderPane();
+
+        //Creating grid pane to display
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10,10,10,10));
+        gridPane.setVgap(8);
+        gridPane.setHgap(10);
+
+        //Label for key
+        Label labelMessage = new Label("Text: ");
+        GridPane.setConstraints(labelMessage,0,3);
+
+        //Text field for key input
+        TextField messageInput = new TextField();
+        GridPane.setConstraints(messageInput, 1,3);
+
+        //Text Area to display results of cipher
+        TextArea resultsTextArea = new TextArea();
+        resultsTextArea.setDisable(true);
+
+        //Button to initiate enciphering
+        Button btnAnalyze = new Button("Analyze");
+        GridPane.setConstraints(btnAnalyze, 0, 5);
+
+        btnAnalyze.setOnAction(e -> {
+            frequencyAnalyzer.analyzeString(messageInput.getText());
+
+            double[] frequencies = frequencyAnalyzer.getFrequencies();
+            String outputText = "";
+            DecimalFormat fm = new DecimalFormat("#.00");
+            for(int i = 0; i < frequencies.length; i++){
+                if(frequencies[i] > 0.0){
+                    double percent = (frequencies[i] * 100.0);
+                    outputText += (char)i + ": " + fm.format(percent) + " %\n";
+                }
+            }
+
+            resultsTextArea.setText(outputText);
+        });
+
+        //Title label
+        Label title = new Label(" Frequency Analyzer ");
+        title.setMinSize(100,50);
+        GridPane.setConstraints(title, 0,0);
+
+        gridPane.getChildren().addAll(labelMessage, messageInput, btnAnalyze, title);
+
+        frequncyPane.setCenter(resultsTextArea);
+        frequncyPane.setLeft(gridPane);
+
+        borderPane.setCenter(frequncyPane);
+
+    }
+
+    /*****************************************************
+     *Switches the program's view to the Vigenere cipher's
+     * page, and runs the logic for that cipher
+     ****************************************************/
     private void runVigenere(){
         Vigenere vigenereMachine = new Vigenere("key");
 
@@ -169,20 +304,33 @@ public class Main extends Application{
             }
         });
 
+        //Title label
         Label title = new Label(" Vigenere Cipher ");
         title.setMinSize(100,50);
         GridPane.setConstraints(title, 0,0);
 
+        //Adding everything to the grid pane
         gridPane.getChildren().addAll(labelKey,keyInput,messageInput,labelMessage,
                 btnEncipher, btnDecipher, title);
 
+        //finishing up the pane and adding it within the border pane instance variable
         vigenerePane.setLeft(gridPane);
-        StackPane rightSide = new StackPane();
-        rightSide.getChildren().add(resultsTextArea);
-        vigenerePane.setCenter(rightSide);
+      //  StackPane rightSide = new StackPane();
+      //  rightSide.getChildren().add(resultsTextArea);
+        vigenerePane.setCenter(resultsTextArea);
         borderPane.setCenter(vigenerePane);
     }
 
+    /***************************************************************
+     * Takes in a string and returns true if it only contains
+     * letters a through z, with no spaces of special characters.
+     * Only checks for lower case letters, so be sure to convert
+     * to lower case before hand if you are interested in capitals
+     * as well
+     *
+     * @param text to be validated
+     * @return whether or not the string is valid
+     **************************************************************/
     private Boolean validateText(String text){
         //Making sure text is all lowercase letters
         for(char character: text.toCharArray()){
